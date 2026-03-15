@@ -193,9 +193,36 @@ def main() -> None:
 
     lines += [
         '',
-        '## Brief Interpretation',
-        '- Higher correlation suggests the boundary entropy proxy is aligned with RT-style min-cut trend.',
-        '- This is a CPU-only toy reproduction scaffold; next steps are parameter sweeps and larger graph ensembles.',
+        '## 今天做了什么',
+        '- 运行了 disk + wormhole 两种几何图上的 CPU-only 复现实验。',
+        '- 计算了 min-cut (RT proxy) 与 entropy proxy 的相关性、线性斜率与 MAE。',
+        '',
+        '## 和昨天相比（自动对比）',
+    ]
+
+    prev_files = sorted(RUNS.glob('*.json'))
+    prev = None
+    if len(prev_files) >= 2:
+        prev = json.loads(prev_files[-2].read_text(encoding='utf-8'))
+
+    if prev:
+        prev_map = {r['mode']: r for r in prev.get('results', [])}
+        for cur in out:
+            p = prev_map.get(cur.mode)
+            if not p:
+                continue
+            dc = cur.corr - float(p.get('corr', 0.0))
+            dm = cur.mae - float(p.get('mae', 0.0))
+            trend = '变好' if (dc >= 0 and dm <= 0) else '变差/混合'
+            lines.append(f"- {cur.mode}: corr {dc:+.4f}, MAE {dm:+.4f} → {trend}")
+    else:
+        lines.append('- 首日或缺少前一日数据，暂无法自动对比。')
+
+    lines += [
+        '',
+        '## 明天计划',
+        '- 做 n=32/48/64 参数扫，观察相关性与误差对图规模的敏感性。',
+        '- 增加随机种子重复，报告均值±方差，降低偶然性。',
     ]
 
     rpath = REPORTS / f'{date}.md'
